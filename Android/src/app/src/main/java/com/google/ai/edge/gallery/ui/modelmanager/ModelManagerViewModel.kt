@@ -67,8 +67,10 @@ import java.net.HttpURLConnection
 import java.net.URL
 import javax.inject.Inject
 import kotlin.collections.sortedWith
+import com.google.ai.edge.gallery.data.ShareData
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -83,7 +85,7 @@ private const val TEXT_INPUT_HISTORY_MAX_SIZE = 50
 private const val MODEL_ALLOWLIST_FILENAME = "model_allowlist.json"
 private const val MODEL_ALLOWLIST_TEST_FILENAME = "model_allowlist_test.json"
 private const val ALLOWLIST_BASE_URL =
-  "https://raw.githubusercontent.com/google-ai-edge/gallery/refs/heads/main/model_allowlists"
+  "https://raw.githubusercontent.com/barakplasma/gallery/refs/heads/main/model_allowlists"
 
 private const val TEST_MODEL_ALLOW_LIST = ""
 
@@ -202,6 +204,19 @@ constructor(
   private val externalFilesDir = context.getExternalFilesDir(null)
   protected val _uiState = MutableStateFlow(createEmptyUiState())
   open val uiState = _uiState.asStateFlow()
+
+  private val _shareData = MutableStateFlow<ShareData?>(null)
+  val shareData: StateFlow<ShareData?> = _shareData.asStateFlow()
+
+  fun setShareData(data: ShareData?) {
+    _shareData.value = data
+  }
+
+  fun consumeShareData(): ShareData? {
+    val current = _shareData.value
+    _shareData.value = null
+    return current
+  }
 
   private var _allowlistModels: MutableList<Model> = mutableListOf()
   val allowlistModels: List<Model>
