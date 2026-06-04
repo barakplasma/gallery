@@ -228,6 +228,127 @@
       ]
     },
     {
+      "name": "SmolLM2-135M-Instruct",
+      "modelId": "litert-community/SmolLM2-135M-Instruct",
+      "modelFile": "SmolLM2_135M_Instruct.litertlm",
+      "commitHash": "8111e0a65fda719f0a6855e8e1a8ec8c3f9ccb22",
+      "description": "HuggingFace SmolLM2 135M instruction-tuned, converted for on-device use with LiteRT-LM. Extremely lightweight — ideal for fast responses on any device.",
+      "sizeInBytes": 142819328,
+      "minDeviceMemoryInGb": 6,
+      "defaultConfig": {
+        "topK": 40,
+        "topP": 0.9,
+        "temperature": 0.8,
+        "maxTokens": 1024,
+        "accelerators": "gpu,cpu"
+      },
+      "taskTypes": ["llm_chat", "llm_prompt_lab"]
+    },
+    {
+      "name": "SmolLM2-360M-Instruct",
+      "modelId": "litert-community/SmolLM2-360M-Instruct",
+      "modelFile": "SmolLM2_360M_instruct.litertlm",
+      "commitHash": "507c99cfe6541ba2bcd84818786f7b025935e5e1",
+      "description": "HuggingFace SmolLM2 360M instruction-tuned, converted for on-device use with LiteRT-LM. A step up from the 135M with better reasoning while still fitting on any 6 GB device.",
+      "sizeInBytes": 373719040,
+      "minDeviceMemoryInGb": 6,
+      "defaultConfig": {
+        "topK": 40,
+        "topP": 0.9,
+        "temperature": 0.8,
+        "maxTokens": 2048,
+        "accelerators": "gpu,cpu"
+      },
+      "taskTypes": ["llm_chat", "llm_prompt_lab"]
+    },
+    {
+      "name": "Gemma3-270M-IT",
+      "modelId": "litert-community/gemma-3-270m-it",
+      "modelFile": "gemma3-270m-it-q8.litertlm",
+      "commitHash": "9d2093270fb5aa49a986b49b5779d763dde7b630",
+      "description": "Google Gemma 3 270M instruction-tuned at q8 quantisation. Tiny footprint with Google quality. Requires Hugging Face login to accept the Gemma licence before downloading.",
+      "sizeInBytes": 304005120,
+      "minDeviceMemoryInGb": 6,
+      "defaultConfig": {
+        "topK": 64,
+        "topP": 0.95,
+        "temperature": 1.0,
+        "maxTokens": 1024,
+        "accelerators": "gpu,cpu"
+      },
+      "taskTypes": ["llm_chat", "llm_prompt_lab"]
+    },
+    {
+      "name": "TinySwallow-1.5B-Instruct",
+      "modelId": "litert-community/TinySwallow-1.5B-Instruct",
+      "modelFile": "TinySwallow-1.5B-Instruct.litertlm",
+      "commitHash": "cf67d4d779c4602a7fdf43331c21897bc63ee67f",
+      "description": "SakanaAI TinySwallow 1.5B instruction-tuned model converted for on-device use. Strong multilingual capability (especially Japanese) at a compact 1.5 GB size.",
+      "sizeInBytes": 1567604736,
+      "minDeviceMemoryInGb": 6,
+      "defaultConfig": {
+        "topK": 64,
+        "topP": 0.95,
+        "temperature": 1.0,
+        "maxTokens": 2048,
+        "accelerators": "gpu,cpu"
+      },
+      "taskTypes": ["llm_chat", "llm_prompt_lab"]
+    },
+    {
+      "name": "VibeThinker-1.5B",
+      "modelId": "litert-community/VibeThinker-1.5B",
+      "modelFile": "VibeThinker-1.5B.litertlm",
+      "commitHash": "10a5f89bb85a97b58585b0d962205dfda0fdac82",
+      "description": "WeiboAI VibeThinker 1.5B, a reasoning-focused model trained to think step-by-step before answering. Good for problems that benefit from chain-of-thought.",
+      "sizeInBytes": 1567604736,
+      "minDeviceMemoryInGb": 6,
+      "defaultConfig": {
+        "topK": 64,
+        "topP": 0.95,
+        "temperature": 0.6,
+        "maxTokens": 4096,
+        "accelerators": "gpu,cpu"
+      },
+      "taskTypes": ["llm_chat", "llm_prompt_lab"]
+    },
+    {
+      "name": "FastVLM-0.5B",
+      "modelId": "litert-community/FastVLM-0.5B",
+      "modelFile": "FastVLM-0.5B.litertlm",
+      "commitHash": "584f5445082bdea1ce230dbfe6a5d38c1b361ed9",
+      "description": "Apple FastVLM 0.5B vision-language model optimised for fast image understanding on device. Supports image input at roughly 1 GB download.",
+      "sizeInBytes": 1156349952,
+      "minDeviceMemoryInGb": 6,
+      "llmSupportImage": true,
+      "defaultConfig": {
+        "topK": 64,
+        "topP": 0.95,
+        "temperature": 1.0,
+        "maxTokens": 1024,
+        "accelerators": "gpu,cpu"
+      },
+      "taskTypes": ["llm_chat", "llm_prompt_lab", "llm_ask_image"],
+      "bestForTaskTypes": ["llm_ask_image"]
+    },
+    {
+      "name": "Qwen3-4B",
+      "modelId": "litert-community/Qwen3-4B",
+      "modelFile": "qwen3_4b_channelwise_int8_float32kv.litertlm",
+      "commitHash": "36796d24f42ec36b48d3b5414b974d4d7871f541",
+      "description": "Alibaba Qwen3 4B with channelwise int8 quantisation. A capable mid-size model with strong reasoning; requires a device with at least 12 GB RAM.",
+      "sizeInBytes": 5672370176,
+      "minDeviceMemoryInGb": 12,
+      "defaultConfig": {
+        "topK": 40,
+        "topP": 0.8,
+        "temperature": 0.7,
+        "maxTokens": 4096,
+        "accelerators": "gpu,cpu"
+      },
+      "taskTypes": ["llm_chat", "llm_prompt_lab"]
+    },
+    {
       "name": "Gemma 4 E2B (Gemini Nano via AICore)",
       "modelId": "google/gemma-4-e2b-it",
       "modelFile": "",
