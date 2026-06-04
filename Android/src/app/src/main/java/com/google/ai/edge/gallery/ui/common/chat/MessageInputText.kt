@@ -243,7 +243,7 @@ fun MessageInputText(
       shareDataConsumed = true
       when {
         sd is ShareData.Image && showImagePicker -> {
-          scope.launch(Dispatchers.IO) {
+          launch(Dispatchers.IO) {
             handleImagesSelected(
               context = context,
               uris = listOf(sd.uri),
@@ -252,7 +252,7 @@ fun MessageInputText(
           }
         }
         sd is ShareData.Audio && showAudioPicker -> {
-          scope.launch(Dispatchers.IO) {
+          launch(Dispatchers.IO) {
             decodeAudioToAudioClip(
               context = context,
               uri = sd.uri,

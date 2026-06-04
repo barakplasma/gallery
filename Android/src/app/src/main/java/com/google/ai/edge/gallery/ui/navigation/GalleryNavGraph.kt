@@ -488,6 +488,7 @@ fun GalleryNavHost(
           }
         navController.navigate(route)
       } else {
+        modelManagerViewModel.consumeShareData()
         navController.navigate(ROUTE_MODEL_LIST)
       }
     }

@@ -442,6 +442,7 @@ fun decodeAudioToAudioClip(
 
   Log.d(TAG, "Decoding compressed audio. MIME: $mimeType, URI: $uri")
   val extractor = android.media.MediaExtractor()
+  var codec: android.media.MediaCodec? = null
   try {
     extractor.setDataSource(context, uri, null)
 
@@ -462,7 +463,7 @@ fun decodeAudioToAudioClip(
     extractor.selectTrack(audioTrackIndex)
 
     val trackMime = inputFormat.getString(android.media.MediaFormat.KEY_MIME)!!
-    val codec = android.media.MediaCodec.createDecoderByType(trackMime)
+    codec = android.media.MediaCodec.createDecoderByType(trackMime)
     codec.configure(inputFormat, null, null, 0)
     codec.start()
 
@@ -521,7 +522,6 @@ fun decodeAudioToAudioClip(
     }
 
     codec.stop()
-    codec.release()
 
     if (sampleCount == 0) {
       Log.e(TAG, "Decoded 0 samples from URI: $uri")
@@ -544,6 +544,7 @@ fun decodeAudioToAudioClip(
     Log.e(TAG, "Failed to decode compressed audio", e)
     return null
   } finally {
+    codec?.release()
     extractor.release()
   }
 }

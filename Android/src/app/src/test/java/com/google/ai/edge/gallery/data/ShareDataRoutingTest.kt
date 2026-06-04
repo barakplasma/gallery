@@ -19,7 +19,10 @@ package com.google.ai.edge.gallery.data
 import android.net.Uri
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
+@RunWith(RobolectricTestRunner::class)
 class ShareDataRoutingTest {
 
   private val dummyUri = Uri.EMPTY
