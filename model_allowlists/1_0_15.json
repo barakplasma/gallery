@@ -1,6 +1,36 @@
 {
   "models": [
     {
+      "name": "Gemma 4 E2B (Gemini Nano via AICore)",
+      "modelId": "google/gemma-4-e2b-it",
+      "modelFile": "",
+      "commitHash": "",
+      "description": "Gemma 4 E2B running via Gemini Nano on Android AI Core — no download required, the model is provided by the system.",
+      "sizeInBytes": 0,
+      "runtimeType": "AICORE",
+      "aicoreReleaseStage": "STABLE",
+      "aicorePreference": "FULL",
+      "llmSupportImage": true,
+      "llmSupportAudio": true,
+      "defaultConfig": {
+        "topK": 64,
+        "temperature": 1.0,
+        "maxTokens": 4000
+      },
+      "taskTypes": [
+        "llm_chat",
+        "llm_prompt_lab",
+        "llm_ask_image",
+        "llm_ask_audio"
+      ],
+      "bestForTaskTypes": [
+        "llm_chat",
+        "llm_prompt_lab",
+        "llm_ask_image",
+        "llm_ask_audio"
+      ]
+    },
+    {
       "name": "Gemma-4-E2B-it",
       "modelId": "litert-community/gemma-4-E2B-it-litert-lm",
       "modelFile": "gemma-4-E2B-it.litertlm",
@@ -347,36 +377,6 @@
         "accelerators": "gpu,cpu"
       },
       "taskTypes": ["llm_chat", "llm_prompt_lab"]
-    },
-    {
-      "name": "Gemma 4 E2B (Gemini Nano via AICore)",
-      "modelId": "google/gemma-4-e2b-it",
-      "modelFile": "",
-      "commitHash": "",
-      "description": "Gemma 4 E2B running via Gemini Nano on Android AI Core — no download required, the model is provided by the system.",
-      "sizeInBytes": 0,
-      "runtimeType": "AICORE",
-      "aicoreReleaseStage": "STABLE",
-      "aicorePreference": "FULL",
-      "llmSupportImage": true,
-      "llmSupportAudio": true,
-      "defaultConfig": {
-        "topK": 64,
-        "temperature": 1.0,
-        "maxTokens": 4000
-      },
-      "taskTypes": [
-        "llm_chat",
-        "llm_prompt_lab",
-        "llm_ask_image",
-        "llm_ask_audio"
-      ],
-      "bestForTaskTypes": [
-        "llm_chat",
-        "llm_prompt_lab",
-        "llm_ask_image",
-        "llm_ask_audio"
-      ]
     }
   ],
   "aicoreRequirements": {
