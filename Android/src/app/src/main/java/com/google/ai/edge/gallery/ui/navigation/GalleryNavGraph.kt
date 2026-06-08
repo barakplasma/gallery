@@ -71,6 +71,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.google.ai.edge.gallery.GalleryEvent
+import com.google.ai.edge.gallery.data.ShareData
+import com.google.ai.edge.gallery.data.shareDataToTaskId
 import com.google.ai.edge.gallery.customtasks.common.CustomTaskData
 import com.google.ai.edge.gallery.customtasks.common.CustomTaskDataForBuiltinTask
 import com.google.ai.edge.gallery.data.ModelDownloadStatusType
@@ -458,6 +460,41 @@ fun GalleryNavHost(
         )
       }
     }
+  }
+
+  // Handle incoming share-target data (images, audio, text shared from other apps).
+  val shareDataState by modelManagerViewModel.shareData.collectAsState()
+  var shareNavConsumed by remember { mutableStateOf(false) }
+  LaunchedEffect(shareDataState, modelManagerUiState.tasks) {
+    val sd = shareDataState
+    if (sd != null && !shareNavConsumed && modelManagerUiState.tasks.isNotEmpty()) {
+      shareNavConsumed = true
+      val targetTaskId = shareDataToTaskId(sd)
+      val task = modelManagerUiState.tasks.find { it.id == targetTaskId }
+      if (task != null) {
+        pickedTask = task
+        enableModelListAnimation = true
+        val defaultModel =
+          task.models.firstOrNull { model ->
+            modelManagerUiState.modelDownloadStatus[model.name]?.status ==
+              ModelDownloadStatusType.SUCCEEDED
+          } ?: task.models.firstOrNull()
+
+        if (defaultModel != null) {
+          val route =
+            if (sd is ShareData.Text) {
+              "$ROUTE_MODEL/${task.id}/${defaultModel.name}?query=${Uri.encode(sd.text)}"
+            } else {
+              "$ROUTE_MODEL/${task.id}/${defaultModel.name}"
+            }
+          navController.navigate(route)
+        } else {
+          modelManagerViewModel.consumeShareData()
+          navController.navigate(ROUTE_MODEL_LIST)
+        }
+      }
+    }
+    if (sd == null) shareNavConsumed = false
   }
 
   // Handle incoming intents for deep links
