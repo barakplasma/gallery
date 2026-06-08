@@ -243,22 +243,25 @@ fun MessageInputText(
       shareDataConsumed = true
       when {
         sd is ShareData.Image && showImagePicker -> {
+          var bitmaps: List<Bitmap> = emptyList()
           withContext(Dispatchers.IO) {
             handleImagesSelected(
               context = context,
               uris = listOf(sd.uri),
-              onImagesSelected = { bitmaps -> updatePickedImages(bitmaps) },
+              onImagesSelected = { bitmaps = it },
             )
           }
+          if (bitmaps.isNotEmpty()) updatePickedImages(bitmaps)
         }
         sd is ShareData.Audio && showAudioPicker -> {
-          withContext(Dispatchers.IO) {
+          val clip = withContext(Dispatchers.IO) {
             decodeAudioToAudioClip(
               context = context,
               uri = sd.uri,
               mimeType = sd.mimeType,
-            )?.let { clip -> updatePickedAudioClips(listOf(clip)) }
+            )
           }
+          if (clip != null) updatePickedAudioClips(listOf(clip))
         }
         else -> { /* Text is pre-filled via initialQuery / curMessage; nothing to do here. */ }
       }

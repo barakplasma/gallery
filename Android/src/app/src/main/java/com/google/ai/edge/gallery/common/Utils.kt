@@ -470,23 +470,26 @@ fun decodeAudioToAudioClip(
     val maxSamples = maxSeconds * SAMPLE_RATE
     val outputBuffer = ShortArray(maxSamples)
     var sampleCount = 0
-    var sawEos = false
+    var sawInputEos = false
+    var sawOutputEos = false
     val timeoutUs = 10_000L
     val bufferInfo = android.media.MediaCodec.BufferInfo()
     var srcSampleRate = -1
     var srcChannels = -1
 
-    while (!sawEos && sampleCount < maxSamples) {
-      val inIdx = codec.dequeueInputBuffer(timeoutUs)
-      if (inIdx >= 0) {
-        val inBuf = codec.getInputBuffer(inIdx)!!
-        val sampleSize = extractor.readSampleData(inBuf, 0)
-        if (sampleSize < 0) {
-          codec.queueInputBuffer(inIdx, 0, 0, 0, android.media.MediaCodec.BUFFER_FLAG_END_OF_STREAM)
-          sawEos = true
-        } else {
-          codec.queueInputBuffer(inIdx, 0, sampleSize, extractor.sampleTime, 0)
-          extractor.advance()
+    while (!sawOutputEos && sampleCount < maxSamples) {
+      if (!sawInputEos) {
+        val inIdx = codec.dequeueInputBuffer(timeoutUs)
+        if (inIdx >= 0) {
+          val inBuf = codec.getInputBuffer(inIdx)!!
+          val sampleSize = extractor.readSampleData(inBuf, 0)
+          if (sampleSize < 0) {
+            codec.queueInputBuffer(inIdx, 0, 0, 0, android.media.MediaCodec.BUFFER_FLAG_END_OF_STREAM)
+            sawInputEos = true
+          } else {
+            codec.queueInputBuffer(inIdx, 0, sampleSize, extractor.sampleTime, 0)
+            extractor.advance()
+          }
         }
       }
 
@@ -516,7 +519,7 @@ fun decodeAudioToAudioClip(
         }
         codec.releaseOutputBuffer(outIdx, false)
         if (bufferInfo.flags and android.media.MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0) {
-          sawEos = true
+          sawOutputEos = true
         }
       }
     }
