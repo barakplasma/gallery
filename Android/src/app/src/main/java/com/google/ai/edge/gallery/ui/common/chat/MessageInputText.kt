@@ -140,7 +140,7 @@ import com.google.ai.edge.gallery.ui.theme.bodyLargeNarrow
 import java.io.FileInputStream
 import java.util.concurrent.Executors
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 private const val TAG = "AGMessageInputText"
 
@@ -243,7 +243,7 @@ fun MessageInputText(
       shareDataConsumed = true
       when {
         sd is ShareData.Image && showImagePicker -> {
-          launch(Dispatchers.IO) {
+          withContext(Dispatchers.IO) {
             handleImagesSelected(
               context = context,
               uris = listOf(sd.uri),
@@ -252,7 +252,7 @@ fun MessageInputText(
           }
         }
         sd is ShareData.Audio && showAudioPicker -> {
-          launch(Dispatchers.IO) {
+          withContext(Dispatchers.IO) {
             decodeAudioToAudioClip(
               context = context,
               uri = sd.uri,

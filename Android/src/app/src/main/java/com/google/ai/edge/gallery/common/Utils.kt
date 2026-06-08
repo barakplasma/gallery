@@ -544,7 +544,15 @@ fun decodeAudioToAudioClip(
     Log.e(TAG, "Failed to decode compressed audio", e)
     return null
   } finally {
-    codec?.release()
-    extractor.release()
+    try {
+      codec?.release()
+    } catch (e: Exception) {
+      Log.e(TAG, "Failed to release codec", e)
+    }
+    try {
+      extractor.release()
+    } catch (e: Exception) {
+      Log.e(TAG, "Failed to release extractor", e)
+    }
   }
 }
