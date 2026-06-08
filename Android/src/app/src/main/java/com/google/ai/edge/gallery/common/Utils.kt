@@ -45,6 +45,7 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import java.io.File
 import java.io.FileInputStream
+import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import java.nio.ByteBuffer
@@ -116,13 +117,28 @@ fun convertWavToMonoWithMaxSeconds(
 ): AudioClip? {
   Log.d(TAG, "Start to convert wav file to mono channel")
 
+  val inputStream =
+    (if (stereoUri.scheme == null || stereoUri.scheme == "file") {
+      FileInputStream(stereoUri.path ?: "")
+    } else {
+      context.contentResolver.openInputStream(stereoUri)
+    }) ?: return null
+  return convertWavToMonoWithMaxSeconds(inputStream = inputStream, maxSeconds = maxSeconds)
+}
+
+/**
+ * Parses a WAV stream into a mono [AudioClip] resampled to [SAMPLE_RATE] Hz.
+ *
+ * Overload that takes a raw [InputStream] so it can be called from unit tests without a
+ * real Android [Context] / [Uri].
+ */
+fun convertWavToMonoWithMaxSeconds(
+  inputStream: InputStream,
+  maxSeconds: Int = 30,
+): AudioClip? {
+  Log.d(TAG, "Start to convert wav file to mono channel")
+
   try {
-    val inputStream =
-      (if (stereoUri.scheme == null || stereoUri.scheme == "file") {
-        FileInputStream(stereoUri.path ?: "")
-      } else {
-        context.contentResolver.openInputStream(stereoUri)
-      }) ?: return null
     val originalBytes = inputStream.readBytes()
     inputStream.close()
 
@@ -404,5 +420,131 @@ fun convertStringToJsonObject(jsonString: String): JsonObject {
     JsonParser.parseString(jsonString).asJsonObject
   } catch (e: Exception) {
     JsonObject()
+  }
+}
+
+/**
+ * Decodes any audio format supported by Android's [android.media.MediaExtractor] (including
+ * Opus/OGG from WhatsApp, AAC, MP3) into a mono [AudioClip] at [SAMPLE_RATE] Hz.
+ *
+ * For PCM WAV files, delegates to [convertWavToMonoWithMaxSeconds] which is faster.
+ * Returns null if no audio track is found or decoding fails.
+ */
+fun decodeAudioToAudioClip(
+  context: Context,
+  uri: Uri,
+  mimeType: String,
+  maxSeconds: Int = 30,
+): AudioClip? {
+  if (mimeType == "audio/wav" || mimeType == "audio/x-wav" || mimeType == "audio/wave") {
+    return convertWavToMonoWithMaxSeconds(context = context, stereoUri = uri, maxSeconds = maxSeconds)
+  }
+
+  Log.d(TAG, "Decoding compressed audio. MIME: $mimeType, URI: $uri")
+  val extractor = android.media.MediaExtractor()
+  var codec: android.media.MediaCodec? = null
+  try {
+    extractor.setDataSource(context, uri, null)
+
+    var audioTrackIndex = -1
+    var inputFormat: android.media.MediaFormat? = null
+    for (i in 0 until extractor.trackCount) {
+      val fmt = extractor.getTrackFormat(i)
+      if (fmt.getString(android.media.MediaFormat.KEY_MIME)?.startsWith("audio/") == true) {
+        audioTrackIndex = i
+        inputFormat = fmt
+        break
+      }
+    }
+    if (audioTrackIndex < 0 || inputFormat == null) {
+      Log.e(TAG, "No audio track found in URI: $uri")
+      return null
+    }
+    extractor.selectTrack(audioTrackIndex)
+
+    val trackMime = inputFormat.getString(android.media.MediaFormat.KEY_MIME)!!
+    codec = android.media.MediaCodec.createDecoderByType(trackMime)
+    codec.configure(inputFormat, null, null, 0)
+    codec.start()
+
+    val maxSamples = maxSeconds * SAMPLE_RATE
+    val outputBuffer = ShortArray(maxSamples)
+    var sampleCount = 0
+    var sawEos = false
+    val timeoutUs = 10_000L
+    val bufferInfo = android.media.MediaCodec.BufferInfo()
+    var srcSampleRate = -1
+    var srcChannels = -1
+
+    while (!sawEos && sampleCount < maxSamples) {
+      val inIdx = codec.dequeueInputBuffer(timeoutUs)
+      if (inIdx >= 0) {
+        val inBuf = codec.getInputBuffer(inIdx)!!
+        val sampleSize = extractor.readSampleData(inBuf, 0)
+        if (sampleSize < 0) {
+          codec.queueInputBuffer(inIdx, 0, 0, 0, android.media.MediaCodec.BUFFER_FLAG_END_OF_STREAM)
+          sawEos = true
+        } else {
+          codec.queueInputBuffer(inIdx, 0, sampleSize, extractor.sampleTime, 0)
+          extractor.advance()
+        }
+      }
+
+      val outIdx = codec.dequeueOutputBuffer(bufferInfo, timeoutUs)
+      if (outIdx >= 0) {
+        // Read output format on first real output buffer (required — not available before this).
+        if (srcSampleRate < 0) {
+          val outFmt = codec.getOutputFormat()
+          srcSampleRate = outFmt.getInteger(android.media.MediaFormat.KEY_SAMPLE_RATE, SAMPLE_RATE)
+          srcChannels = outFmt.getInteger(android.media.MediaFormat.KEY_CHANNEL_COUNT, 1)
+        }
+        val outBuf = codec.getOutputBuffer(outIdx)
+        if (outBuf != null && bufferInfo.size > 0) {
+          outBuf.position(bufferInfo.offset)
+          outBuf.limit(bufferInfo.offset + bufferInfo.size)
+          val shorts = outBuf.order(java.nio.ByteOrder.LITTLE_ENDIAN).asShortBuffer()
+          while (shorts.hasRemaining() && sampleCount < maxSamples) {
+            val s0 = shorts.get().toInt()
+            if (srcChannels >= 2) {
+              val s1 = if (shorts.hasRemaining()) shorts.get().toInt() else 0
+              outputBuffer[sampleCount++] = ((s0 + s1) / 2).toShort()
+              repeat(srcChannels - 2) { if (shorts.hasRemaining()) shorts.get() }
+            } else {
+              outputBuffer[sampleCount++] = s0.toShort()
+            }
+          }
+        }
+        codec.releaseOutputBuffer(outIdx, false)
+        if (bufferInfo.flags and android.media.MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0) {
+          sawEos = true
+        }
+      }
+    }
+
+    codec.stop()
+
+    if (sampleCount == 0) {
+      Log.e(TAG, "Decoded 0 samples from URI: $uri")
+      return null
+    }
+
+    val finalRate = if (srcSampleRate > 0) srcSampleRate else SAMPLE_RATE
+    val monoSamples =
+      if (finalRate != SAMPLE_RATE) {
+        resample(outputBuffer.copyOf(sampleCount), finalRate, SAMPLE_RATE, 1)
+      } else {
+        outputBuffer.copyOf(sampleCount)
+      }
+
+    val monoByteBuffer =
+      java.nio.ByteBuffer.allocate(monoSamples.size * 2).order(java.nio.ByteOrder.LITTLE_ENDIAN)
+    monoByteBuffer.asShortBuffer().put(monoSamples)
+    return AudioClip(audioData = monoByteBuffer.array(), sampleRate = SAMPLE_RATE)
+  } catch (e: Exception) {
+    Log.e(TAG, "Failed to decode compressed audio", e)
+    return null
+  } finally {
+    codec?.release()
+    extractor.release()
   }
 }

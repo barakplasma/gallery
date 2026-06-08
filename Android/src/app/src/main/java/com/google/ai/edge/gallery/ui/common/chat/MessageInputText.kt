@@ -124,8 +124,10 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.google.ai.edge.gallery.R
 import com.google.ai.edge.gallery.common.AudioClip
 import com.google.ai.edge.gallery.common.convertWavToMonoWithMaxSeconds
+import com.google.ai.edge.gallery.common.decodeAudioToAudioClip
 import com.google.ai.edge.gallery.common.decodeSampledBitmapFromUri
 import com.google.ai.edge.gallery.common.rotateBitmap
+import com.google.ai.edge.gallery.data.ShareData
 import com.google.ai.edge.gallery.data.MAX_AUDIO_CLIP_COUNT
 import com.google.ai.edge.gallery.data.MAX_IMAGE_COUNT
 import com.google.ai.edge.gallery.data.MAX_IMAGE_COUNT_AI_CORE
@@ -232,6 +234,39 @@ fun MessageInputText(
       }
   }
 
+  // Pre-populate the input from an Android share-target intent, once per share event.
+  val shareData by modelManagerViewModel.shareData.collectAsState()
+  var shareDataConsumed by remember { mutableStateOf(false) }
+  LaunchedEffect(shareData) {
+    val sd = shareData
+    if (sd != null && !shareDataConsumed) {
+      shareDataConsumed = true
+      when {
+        sd is ShareData.Image && showImagePicker -> {
+          launch(Dispatchers.IO) {
+            handleImagesSelected(
+              context = context,
+              uris = listOf(sd.uri),
+              onImagesSelected = { bitmaps -> updatePickedImages(bitmaps) },
+            )
+          }
+        }
+        sd is ShareData.Audio && showAudioPicker -> {
+          launch(Dispatchers.IO) {
+            decodeAudioToAudioClip(
+              context = context,
+              uri = sd.uri,
+              mimeType = sd.mimeType,
+            )?.let { clip -> updatePickedAudioClips(listOf(clip)) }
+          }
+        }
+        else -> { /* Text is pre-filled via initialQuery / curMessage; nothing to do here. */ }
+      }
+      modelManagerViewModel.consumeShareData()
+    }
+    if (sd == null) shareDataConsumed = false
+  }
+
   LaunchedEffect(Unit) { checkFrontCamera(context = context, callback = { hasFrontCamera = it }) }
 
   LaunchedEffect(pickedImages) { onPickedImagesChanged(pickedImages) }
@@ -285,11 +320,13 @@ fun MessageInputText(
     ) { result ->
       if (result.resultCode == android.app.Activity.RESULT_OK) {
         result.data?.data?.let { uri ->
-          Log.d(TAG, "Picked wav file: $uri")
+          val pickedMimeType = result.data?.type ?: "audio/wav"
+          Log.d(TAG, "Picked audio file: $uri (type: $pickedMimeType)")
           scope.launch(Dispatchers.IO) {
             handleAudioWavSelected(
               context = context,
               uri = uri,
+              mimeType = pickedMimeType,
               onAudioSelected = { audioClip ->
                 updatePickedAudioClips(
                   listOf(
@@ -301,7 +338,7 @@ fun MessageInputText(
           }
         }
       } else {
-        Log.d(TAG, "Wav picking cancelled.")
+        Log.d(TAG, "Audio picking cancelled.")
       }
     }
 
@@ -571,10 +608,6 @@ fun MessageInputText(
                               Intent(Intent.ACTION_GET_CONTENT).apply {
                                 addCategory(Intent.CATEGORY_OPENABLE)
                                 type = "audio/*"
-
-                                // Provide a list of more specific MIME types to filter for.
-                                val mimeTypes = arrayOf("audio/wav", "audio/x-wav")
-                                putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes)
 
                                 // Single select.
                                 putExtra(Intent.EXTRA_ALLOW_MULTIPLE, false)
@@ -1003,9 +1036,10 @@ private fun handleImagesSelected(
 private fun handleAudioWavSelected(
   context: Context,
   uri: Uri,
+  mimeType: String = "audio/wav",
   onAudioSelected: (AudioClip) -> Unit,
 ) {
-  convertWavToMonoWithMaxSeconds(context = context, stereoUri = uri)?.let { audioClip ->
+  decodeAudioToAudioClip(context = context, uri = uri, mimeType = mimeType)?.let { audioClip ->
     onAudioSelected(audioClip)
   }
 }
