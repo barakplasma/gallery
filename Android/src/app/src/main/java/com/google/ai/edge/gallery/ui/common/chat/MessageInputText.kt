@@ -140,6 +140,7 @@ import com.google.ai.edge.gallery.ui.theme.bodyLargeNarrow
 import java.io.FileInputStream
 import java.util.concurrent.Executors
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 private const val TAG = "AGMessageInputText"
