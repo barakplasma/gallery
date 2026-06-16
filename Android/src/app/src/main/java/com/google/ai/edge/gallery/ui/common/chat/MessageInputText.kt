@@ -141,6 +141,7 @@ import java.io.FileInputStream
 import java.util.concurrent.Executors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 private const val TAG = "AGMessageInputText"
 
@@ -243,22 +244,25 @@ fun MessageInputText(
       shareDataConsumed = true
       when {
         sd is ShareData.Image && showImagePicker -> {
-          launch(Dispatchers.IO) {
+          var bitmaps: List<Bitmap> = emptyList()
+          withContext(Dispatchers.IO) {
             handleImagesSelected(
               context = context,
               uris = listOf(sd.uri),
-              onImagesSelected = { bitmaps -> updatePickedImages(bitmaps) },
+              onImagesSelected = { bitmaps = it },
             )
           }
+          if (bitmaps.isNotEmpty()) updatePickedImages(bitmaps)
         }
         sd is ShareData.Audio && showAudioPicker -> {
-          launch(Dispatchers.IO) {
+          val clip = withContext(Dispatchers.IO) {
             decodeAudioToAudioClip(
               context = context,
               uri = sd.uri,
               mimeType = sd.mimeType,
-            )?.let { clip -> updatePickedAudioClips(listOf(clip)) }
+            )
           }
+          if (clip != null) updatePickedAudioClips(listOf(clip))
         }
         else -> { /* Text is pre-filled via initialQuery / curMessage; nothing to do here. */ }
       }
