@@ -56,6 +56,12 @@ android {
       signingConfig = signingConfigs.getByName("debug")
     }
   }
+  testOptions {
+    unitTests {
+      isReturnDefaultValues = true   // prevent Android stubs from throwing (e.g. Log.d)
+      isIncludeAndroidResources = true  // required by Robolectric
+    }
+  }
   compileOptions {
     sourceCompatibility = JavaVersion.VERSION_11
     targetCompatibility = JavaVersion.VERSION_11
@@ -112,6 +118,7 @@ dependencies {
   implementation(libs.moshi.kotlin)
   kapt(libs.hilt.android.compiler)
   testImplementation(libs.junit)
+  testImplementation(libs.robolectric)
   androidTestImplementation(libs.androidx.junit)
   androidTestImplementation(libs.androidx.espresso.core)
   androidTestImplementation(platform(libs.androidx.compose.bom))
